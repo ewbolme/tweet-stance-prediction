@@ -30,6 +30,20 @@ def transform_stance(X1):
     xmb[:, :, :, 1] = np.arange(n_vocab + n_special, n_vocab + n_special + n_ctx)
     return xmb, mmb
 
+def transform_sentiment(X1):
+    n_batch = len(X1)
+    xmb = np.zeros((n_batch, 1, n_ctx, 2), dtype=np.int32)
+    mmb = np.zeros((n_batch, 1, n_ctx), dtype=np.float32)
+    start = encoder['_start_']
+    for i, x1 in enumerate(X1):
+        x12 = [start] + x1[:max_len] + [clf_token]
+        l12 = len(x12)
+        xmb[i, 0, :l12, 0] = x12
+        mmb[i, 0, :l12] = 1
+    # Position information that is added to the input embeddings in the TransformerModel
+    xmb[:, :, :, 1] = np.arange(n_vocab + n_special, n_vocab + n_special + n_ctx)
+    return xmb, mmb
+
 def iter_apply(Xs, Ms, Ys):
     # fns = [lambda x: np.concatenate(x, 0), lambda x: float(np.sum(x))]
     logits = []
@@ -117,15 +131,15 @@ def run_epoch():
 argmax = lambda x: np.argmax(x, 1)
 
 pred_fns = {
-    'stance': argmax,
+    'sentiment': argmax,
 }
 
 filenames = {
-    'stance': 'stance.tsv',
+    'sentiment': 'sentiment.tsv',
 }
 
 label_decoders = {
-    'stance': None,
+    'sentiment': None,
 }
 
 if __name__ == '__main__':
@@ -196,7 +210,7 @@ if __name__ == '__main__':
     n_vocab = len(text_encoder.encoder)
 
     print("Encoding dataset...")
-    ((trX, trY), (vaX, vaY), (teX, )) = encode_dataset(*stance(data_dir, topic=topic),
+    ((trX, trY), (vaX, vaY), (teX, )) = encode_dataset(*sentiment(data_dir, topic=topic),
      encoder=text_encoder)
 
     encoder['_start_'] = len(encoder)
@@ -212,10 +226,10 @@ if __name__ == '__main__':
     ) + 3, n_ctx)
 
     vocab = n_vocab + n_special + n_ctx
-    trX, trM = transform_stance(trX)
-    vaX, vaM = transform_stance(vaX)
+    trX, trM = transform_sentiment(trX)
+    vaX, vaM = transform_sentiment(vaX)
     if submit:
-        teX, teM = transform_stance(teX)
+        teX, teM = transform_sentiment(teX)
 
     n_train = len(trY)
     n_valid = len(vaY)

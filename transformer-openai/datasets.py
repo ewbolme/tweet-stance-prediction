@@ -101,3 +101,32 @@ if __name__ == "__main__":
     print(len(trX))
     print(len(teX))
 
+def _sentiment(df):
+    def clean_ascii(text):
+        # function to remove non-ASCII chars from data
+        return ''.join(i for i in text if ord(i) < 128)
+    df['Tweet'] = df['Tweet'].apply(clean_ascii)
+    X = df.Tweet.values
+    Y = np.array([s for s in df.Sentiment])
+    return X, Y
+
+def sentiment(df, test_df):
+    path = Path(data_dir)
+
+    X, Y = _sentiment(df)
+    teX, _ = _sentiment(test_df)
+    tr_text, va_text, tr_sent, va_sent = train_test_split(X, Y, test_size=0.2, random_state=seed)
+    trX = []
+    trY = []
+    for t, s in zip(tr_text, tr_sent):
+        trX.append(t)
+        trY.append(s)
+
+    vaX = []
+    vaY = []
+    for t, s in zip(va_text, va_sent):
+        vaX.append(t)
+        vaY.append(s)
+    trY = np.asarray(trY, dtype=np.int32)
+    vaY = np.asarray(vaY, dtype=np.int32)
+    return (trX, trY), (vaX, vaY), (teX, )
